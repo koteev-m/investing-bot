@@ -1,3 +1,5 @@
+val ktorVersion = "2.3.8"
+
 dependencies {
     implementation(project(":core"))
     implementation(project(":clients"))
@@ -8,4 +10,6 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.4.14")
     implementation("io.lettuce:lettuce-core:6.8.0.RELEASE")
     implementation("io.sentry:sentry:8.18.0")
+    implementation("io.ktor:ktor-client-core:$ktorVersion")
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
 }

@@ -4,6 +4,9 @@ import com.pengrad.telegrambot.utility.BotUtils
 import com.pengrad.telegrambot.TelegramBot
 import com.pengrad.telegrambot.model.Update
 import com.pengrad.telegrambot.request.SendMessage
+import com.pengrad.telegrambot.model.request.ParseMode
+import com.pengrad.telegrambot.model.request.ReplyKeyboardMarkup
+import com.pengrad.telegrambot.model.request.KeyboardButton
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -11,6 +14,10 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlin.reflect.KFunction2
 import kotlin.reflect.full.findAnnotation
+import kotlinx.coroutines.runBlocking
+import org.koin.core.context.GlobalContext
+import pl.bot.core.quote.QuoteService
+import pl.bot.core.crypto.CryptoQuoteService
 
 fun Route.telegramWebhook(bot: TelegramBot, rateLimiter: RateLimiter = RateLimiter()) {
     post("/tg/webhook") {
@@ -30,7 +37,13 @@ fun processUpdate(bot: TelegramBot, rateLimiter: RateLimiter, update: Update) {
     fun exec(handler: KFunction2<TelegramBot, Update, Unit>) {
         handler.findAnnotation<Quota>()?.let { quota ->
             if (!rateLimiter.checkAndIncrement(userId, quota.name, quota.dailyLimit)) {
-                bot.execute(SendMessage(chatId, "Квота исчерпана"))
+                val msg = SendMessage(chatId, "Квота исчерпана")
+                    .replyMarkup(
+                        ReplyKeyboardMarkup(KeyboardButton("/upgrade"))
+                            .oneTimeKeyboard(true)
+                            .resizeKeyboard(true),
+                    )
+                bot.execute(msg)
                 return
             }
         }
@@ -80,9 +93,33 @@ fun upgrade(bot: TelegramBot, update: Update) {
 }
 
 @RequiresPlan(Plan.FREE)
-@Quota("quote", 10)
+@Quota("quote", 5)
 fun quote(bot: TelegramBot, update: Update) {
-    bot.execute(SendMessage(update.message().chat().id(), "Quote stub"))
+    val service = GlobalContext.get().get<QuoteService>()
+    val chatId = update.message().chat().id()
+    val parts = update.message().text().split(" ")
+    val secid = parts.getOrNull(1)?.uppercase()
+    if (secid == null) {
+        bot.execute(SendMessage(chatId, "Используйте /quote TICKER"))
+        return
+    }
+    val q = runBlocking { service.getQuote(secid) }
+    if (q == null) {
+        bot.execute(SendMessage(chatId, "Не найдена котировка"))
+        return
+    }
+    val emoji = if (q.dayChangePercent >= 0) "📈" else "📉"
+    val sign = if (q.dayChangePercent >= 0) "+" else ""
+    val text = "<b>${secid}</b> %.2f ₽ (%s%.2f%%) %s\nОбъём: %d".format(
+        q.price,
+        sign,
+        q.dayChangePercent,
+        emoji,
+        q.volume,
+    )
+    bot.execute(
+        SendMessage(chatId, text).parseMode(ParseMode.HTML),
+    )
 }
 
 @RequiresPlan(Plan.PRO)
@@ -112,9 +149,33 @@ fun alert(bot: TelegramBot, update: Update) {
     bot.execute(SendMessage(update.message().chat().id(), "Alert stub"))
 }
 
-@RequiresPlan(Plan.PRO)
+@RequiresPlan(Plan.FREE)
+@Quota("cquote", 5)
 fun cquote(bot: TelegramBot, update: Update) {
-    bot.execute(SendMessage(update.message().chat().id(), "Crypto quote stub"))
+    val service = GlobalContext.get().get<CryptoQuoteService>()
+    val chatId = update.message().chat().id()
+    val parts = update.message().text().split(" ")
+    val symbol = parts.getOrNull(1)?.uppercase()
+    if (symbol == null) {
+        bot.execute(SendMessage(chatId, "Используйте /cquote SYMBOL"))
+        return
+    }
+    val q = runBlocking { service.getQuote(symbol) }
+    if (q == null) {
+        bot.execute(SendMessage(chatId, "Не найдена котировка"))
+        return
+    }
+    val emoji = if (q.change24h >= 0) "📈" else "📉"
+    val sign = if (q.change24h >= 0) "+" else ""
+    val text = "<b>${symbol}</b> %.2f USD (%s%.2f%%) %s".format(
+        q.price,
+        sign,
+        q.change24h,
+        emoji,
+    )
+    bot.execute(
+        SendMessage(chatId, text).parseMode(ParseMode.HTML),
+    )
 }
 
 @RequiresPlan(Plan.PRO)

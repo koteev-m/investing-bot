@@ -47,18 +47,29 @@ class CoinGeckoClient(
         }
     }
 
-    suspend fun simplePrice(ids: List<String>, vs: List<String> = listOf("usd", "rub")): Map<String, Map<String, Double>> {
-        val key = "cg:simple:${ids.joinToString(",")}:${vs.joinToString(",")}" 
+    suspend fun simplePrice(
+        ids: List<String>,
+        vs: List<String> = listOf("usd", "rub"),
+        include24hChange: Boolean = false,
+    ): Map<String, Map<String, Double>> {
+        val key = "cg:simple:${ids.joinToString(",")}:${vs.joinToString(",")}:$include24hChange"
         cache.get(key)?.let {
-            return json.decodeFromString(MapSerializer(String.serializer(), MapSerializer(String.serializer(), Double.serializer())), it)
+            return json.decodeFromString(
+                MapSerializer(String.serializer(), MapSerializer(String.serializer(), Double.serializer())),
+                it,
+            )
         }
         val body = http.get("${'$'}BASE_URL/simple/price") {
             url {
                 parameters.append("ids", ids.joinToString(","))
                 parameters.append("vs_currencies", vs.joinToString(","))
+                if (include24hChange) parameters.append("include_24hr_change", "true")
             }
         }.bodyAsText()
-        val result = json.decodeFromString(MapSerializer(String.serializer(), MapSerializer(String.serializer(), Double.serializer())), body)
+        val result = json.decodeFromString(
+            MapSerializer(String.serializer(), MapSerializer(String.serializer(), Double.serializer())),
+            body,
+        )
         cache.set(key, body, TTL_SECONDS)
         return result
     }
