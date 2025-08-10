@@ -1,0 +1,9 @@
+{
+  "boards": {
+    "columns": ["SECID"],
+    "data": [
+      ["SBER2024"],
+      ["SBER2025"]
+    ]
+  }
+}
