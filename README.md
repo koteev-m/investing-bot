@@ -1,53 +1,56 @@
 # P&L Bot
 
-Telegram bot for tracking MOEX and cryptocurrency performance.
+Multi-module Kotlin project for a Telegram bot tracking MOEX and crypto performance.
+
+## Modules
+
+* `core` – domain models and use cases
+* `data` – Exposed repositories and Flyway migrations
+* `clients` – HTTP/WS clients for MOEX, Tinkoff, CoinGecko, Binance, Fear&Greed, Whale Alert
+* `bot` – Ktor webhook server and Telegram bot logic (pengrad)
+* `worker` – Quartz jobs for alerts and digests
+* `metrics` – Micrometer Prometheus endpoint
+* `infra` – configuration, Koin DI, Redis, Sentry, common utilities
 
 ## Architecture
 
 ```
-                               +---------------------------+
-                               |        Telegram           |
-                               +-------------+-------------+
-                                             |
-                                             v
-                       +---------------------+---------------------+
-                       |                    Bot                    |
-                       |      (python-telegram-bot webhook)       |
-                       +---------------------+---------------------+
-                                             |
-                                             v
-                                     +-------+-------+
-                                     |   Gateway     |
-                                     |   FastAPI     |
-                                     +---+-------+---+
-                                         |       |
-                                         |       |
-                                         v       v
-                                   +-----+--+  +--+-----+
-                                   |Postgres|  | Redis  |
-                                   +-----+--+  +--+-----+
-                                         |       |
-                                         v       v
-                                   +-----+-------+-----+
-                                   |     Workers       |
-                                   | (Celery/RQ alerts)|
-                                   +-----+-------+-----+
-                                         |
-                             +-----------+-----------+
-                             |   External Providers  |
-                             | MOEX, Tinkoff,        |
-                             | CoinGecko, Binance,   |
-                             | Fear&Greed, WhaleAlert|
-                             +-----------+-----------+
-                                         |
-                             +-----------+-----------+
-                             | Monitoring & Logging   |
-                             | Prometheus, Grafana,   |
-                             | Sentry, structlog      |
-                             +-----------------------+
+                                 +-------------+
+                                 |  Telegram   |
+                                 +------+------+
+                                        |
+                                        v
+                          +-------------+-------------+
+                          |            Bot            |
+                          |  Ktor webhook + pengrad   |
+                          +------+-------+------+-----+
+                                 |              |
+                                 v              v
+                           +-----+-----+   +----+----+
+                           |  Clients  |   | Metrics |
+                           +--+-----+--+   +----+----+
+                              |     |           |
+                              v     v           |
+                        +-----+-----+     +----+----+
+                        |   Data    |<----+ Worker |
+                        |  Exposed  |     | Quartz |
+                        +-----+-----+     +----+----+
+                              |                 |
+                              v                 |
+                            +--+----------------+--+
+                            |       Infra         |
+                            | Koin, Redis, Sentry |
+                            +--+------------------+
+                              |
+                              v
+                            +----+
+                            |Core|
+                            +----+
 ```
 
-## Bot Commands
+External providers: MOEX ISS & Options API, Tinkoff Invest WS, CoinGecko, Binance Spot, Alternative.me Fear & Greed, Whale Alert
+
+## Commands
 
 * `/start` – start the bot
 * `/help` – show help
@@ -62,4 +65,3 @@ Telegram bot for tracking MOEX and cryptocurrency performance.
 * `/cgainers` – top crypto gainers
 * `/convert` – convert currencies
 * `/cfear` – crypto fear & greed index
-
