@@ -1,0 +1,8 @@
+{
+  "dividends": {
+    "columns": ["secid", "registryclosedate", "value"],
+    "data": [
+      ["SBER", "2024-06-01", 1.5]
+    ]
+  }
+}
