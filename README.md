@@ -50,6 +50,14 @@ Multi-module Kotlin project for a Telegram bot tracking MOEX and crypto performa
 
 External providers: MOEX ISS & Options API, Tinkoff Invest WS, CoinGecko, Binance Spot, Alternative.me Fear & Greed, Whale Alert
 
+### MOEX option calculator responses
+
+* `series` – `SECID` list
+* `chain` – `STRIKE`, `CALL`, `PUT`
+* `greeks` – `delta`, `gamma`, `theta`, `vega`, `iv`
+* `smile` – `strike`, `iv`
+* `strategy_pnl` – `price`, `pnl` with `breakeven` (`low`, `high`)
+
 ## Commands
 
 * `/start` – start the bot
