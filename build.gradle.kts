@@ -33,7 +33,7 @@ subprojects {
     }
 
     dependencies {
-        add("implementation", "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+        add("implementation", "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
         add("implementation", "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
         add("testImplementation", "org.junit.jupiter:junit-jupiter:5.10.2")
         add("testImplementation", "io.mockk:mockk:1.14.5")
@@ -49,6 +49,10 @@ subprojects {
             force("org.jetbrains.kotlin:kotlin-stdlib-common:1.9.22")
             force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.22")
             force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.22")
+            force("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+            force("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3")
+            force("org.jetbrains.kotlinx:kotlinx-coroutines-debug:1.7.3")
+            force("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
         }
     }
 }
