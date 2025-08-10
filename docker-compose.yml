@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: investing
+      POSTGRES_USER: investing
+      POSTGRES_PASSWORD: investing
+    ports:
+      - "5432:5432"
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+  bot:
+    build:
+      context: .
+      dockerfile: bot/Dockerfile
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "8080:8080"
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    depends_on:
+      - postgres
+      - redis
+  prometheus:
+    image: prom/prometheus:v2.49.1
+    volumes:
+      - ./metrics/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+  grafana:
+    image: grafana/grafana:10.4.1
+    volumes:
+      - ./metrics/grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3000:3000"
