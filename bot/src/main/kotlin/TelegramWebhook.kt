@@ -18,6 +18,9 @@ import kotlinx.coroutines.runBlocking
 import org.koin.core.context.GlobalContext
 import pl.bot.core.quote.QuoteService
 import pl.bot.core.crypto.CryptoQuoteService
+import pl.bot.core.alert.Alert
+import pl.bot.core.alert.AlertRepository
+import pl.bot.core.alert.Direction
 
 fun Route.telegramWebhook(bot: TelegramBot, rateLimiter: RateLimiter = RateLimiter()) {
     post("/tg/webhook") {
@@ -144,9 +147,23 @@ fun portfolio(bot: TelegramBot, update: Update) {
     bot.execute(SendMessage(chatId, reply))
 }
 
-@RequiresPlan(Plan.PRO)
+@RequiresPlan(Plan.FREE)
 fun alert(bot: TelegramBot, update: Update) {
-    bot.execute(SendMessage(update.message().chat().id(), "Alert stub"))
+    val chatId = update.message().chat().id()
+    val userId = update.message().from().id()
+    val parts = update.message().text().split(" ")
+    val symbol = parts.getOrNull(1)?.uppercase()
+    val op = parts.getOrNull(2)
+    val price = parts.getOrNull(3)?.toDoubleOrNull()
+    if (symbol == null || price == null || op !in setOf(">", "<")) {
+        bot.execute(SendMessage(chatId, "Используйте /alert TICKER > PRICE"))
+        return
+    }
+    val dir = if (op == ">") Direction.ABOVE else Direction.BELOW
+    val repo = GlobalContext.get().get<AlertRepository>()
+    val permanent = userPlan(userId).ordinal >= Plan.PRO.ordinal
+    repo.save(Alert(userId, chatId, symbol, false, dir, price, permanent = permanent))
+    bot.execute(SendMessage(chatId, "Алерт сохранён"))
 }
 
 @RequiresPlan(Plan.FREE)
@@ -178,9 +195,23 @@ fun cquote(bot: TelegramBot, update: Update) {
     )
 }
 
-@RequiresPlan(Plan.PRO)
+@RequiresPlan(Plan.FREE)
 fun calert(bot: TelegramBot, update: Update) {
-    bot.execute(SendMessage(update.message().chat().id(), "Crypto alert stub"))
+    val chatId = update.message().chat().id()
+    val userId = update.message().from().id()
+    val parts = update.message().text().split(" ")
+    val symbol = parts.getOrNull(1)?.uppercase()
+    val op = parts.getOrNull(2)
+    val price = parts.getOrNull(3)?.toDoubleOrNull()
+    if (symbol == null || price == null || op !in setOf(">", "<")) {
+        bot.execute(SendMessage(chatId, "Используйте /calert SYMBOL > PRICE"))
+        return
+    }
+    val dir = if (op == ">") Direction.ABOVE else Direction.BELOW
+    val repo = GlobalContext.get().get<AlertRepository>()
+    val permanent = userPlan(userId).ordinal >= Plan.PRO.ordinal
+    repo.save(Alert(userId, chatId, symbol, true, dir, price, permanent = permanent))
+    bot.execute(SendMessage(chatId, "Алерт сохранён"))
 }
 
 @RequiresPlan(Plan.PRO)
